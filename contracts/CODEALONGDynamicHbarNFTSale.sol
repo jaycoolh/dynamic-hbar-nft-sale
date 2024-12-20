@@ -23,7 +23,6 @@ contract DynamicHbarNFTSale is Ownable, HederaTokenService, KeyHelper {
     uint256 public priceInUSDC;
     // Chainlink Aggregator for HBAR/USD
     AggregatorV3Interface internal priceFeedHbarUsd;
-    AggregatorV3Interface internal priceFeedBtcUsd;
 
     // USDC token contract
     IERC20 public usdcToken;
@@ -50,7 +49,6 @@ contract DynamicHbarNFTSale is Ownable, HederaTokenService, KeyHelper {
         usdcToken = IERC20(_usdcAddress);
         wbtcToken = IERC20(_wbtcAddress);
         priceFeedHbarUsd = AggregatorV3Interface(0x59bC155EB6c6C415fE43255aF66EcF0523c92B4a);
-        priceFeedBtcUsd = AggregatorV3Interface(0x058fE79CB5775d4b167920Ca6036B824805A9ABd);
         // Initialize metadata array with the provided string
         metadata.push(bytes(_metadataString));
     }
@@ -61,14 +59,7 @@ contract DynamicHbarNFTSale is Ownable, HederaTokenService, KeyHelper {
      */
     function getLatestBTCPrice() public view returns (int256 price) {
         // fetch bitcoin price from feed
-        (
-            /* uint80 roundID */,
-            int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
-        ) = priceFeedBtcUsd.latestRoundData();
-        return answer;
+
     }
 
     /**
@@ -77,16 +68,12 @@ contract DynamicHbarNFTSale is Ownable, HederaTokenService, KeyHelper {
      */
     function convertUSDCToBTC() public view returns (uint256 btcAmount) {
         // 1. get price
-        int256 btcPrice = getLatestBTCPrice();
 
         // 2. basic error handling
-        require(btcPrice > 0, "Invalid BTC price");
 
         // 3. convert price in USDC to BTC
-        btcAmount = (priceInUSDC * 1e10) / uint256(btcPrice);
 
         // 4. return amount
-        return btcAmount;
     }
 
     /**
@@ -96,17 +83,12 @@ contract DynamicHbarNFTSale is Ownable, HederaTokenService, KeyHelper {
      */
     function purchaseWithBTC() external {
         // 1. get bitcoin amount needed
-        uint256 btcAmount = convertUSDCToBTC();
 
         // 2. transfer btc from msg sender to SC
-        bool success = wbtcToken.transferFrom(msg.sender, address(this), btcAmount);
-        require(success, "BTC transfer failed");
 
         // 3. mint NFT
-        int64 serial = mintNFT();
 
         // 4. transfer nft to buyer
-        nft.transferFrom(address(this), msg.sender, uint256(int256(serial)));
     }
 
     /**
